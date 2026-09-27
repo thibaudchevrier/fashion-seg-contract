@@ -67,7 +67,7 @@ make check                                                                # ruff
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), checked by the
 `commit-msg` hook and on every PR. On every merge to `main`, commitizen bumps the version for
-`feat` (minor) and `fix`/`perf` (patch) commits (breaking changes bump the minor version while
+`feat` (minor) and `fix`/`perf`/`refactor` (patch) commits (breaking changes bump the minor version while
 < 1.0), updates `CHANGELOG.md`, tags `vX.Y.Z` and publishes a GitHub Release with the wheel and sdist.
 
 CI runs the tests on Python 3.11 with the oldest supported dependencies (numpy 1.x) and on
