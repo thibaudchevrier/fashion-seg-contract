@@ -1,0 +1,48 @@
+[project]
+name = "fashion-seg-contract"
+version = "0.0.0"
+description = "Response contract of the fashion segmentation model: JSON Schema, RLE masks, class labels"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+# numpy 1.x (trainer: TensorFlow 2.15) and 2.x (serving) must both work.
+dependencies = ["numpy>=1.23"]
+
+[project.optional-dependencies]
+validate = ["jsonschema>=4.18"]
+
+[dependency-groups]
+dev = ["pytest", "ruff", "pylint", "commitizen>=4.19", "pre-commit>=4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fashion_seg_contract"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pylint.main]
+py-version = "3.10"
+
+[tool.pylint."messages control"]
+disable = ["too-few-public-methods"]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "uv"          # bumps pyproject.toml and uv.lock together
+tag_format = "v$version"
+update_changelog_on_bump = true
+major_version_zero = true        # breaking changes bump the minor version while < 1.0
