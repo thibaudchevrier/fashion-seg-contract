@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  commits:
+    name: Conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Every commit of the PR follows Conventional Commits
+        run: >-
+          uvx --from commitizen==4.19.0 cz check
+          --rev-range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+
+  quality:
+    name: Lint (ruff, pylint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: make install
+      - run: make lint
+
+  tests:
+    # Consumers run it on Python 3.11 + numpy 1.x (TF 2.15 trainer) and 3.12 + numpy 2.x (serving).
+    name: Tests (Python ${{ matrix.python }}, ${{ matrix.resolution }} deps)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python: "3.11"
+            resolution: lowest-direct
+          - python: "3.12"
+            resolution: highest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv venv --python ${{ matrix.python }}
+      - run: uv pip install --resolution ${{ matrix.resolution }} -e ".[validate]"
+      - run: uv pip install pytest
+      - run: uv pip list | grep -Ei "^(numpy|jsonschema) "
+      - run: .venv/bin/pytest
