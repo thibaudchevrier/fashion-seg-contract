@@ -1,6 +1,6 @@
 [project]
 name = "fashion-seg-contract"
-version = "0.0.0"
+version = "0.1.0"
 description = "Response contract of the fashion segmentation model: JSON Schema, RLE masks, class labels"
 readme = "README.md"
 license = "MIT"
