@@ -40,32 +40,41 @@ make check     # lint + test: run before every commit
 
 ## Standards
 
+These standards are the same in the four repositories of the project (fashion-seg-contract,
+maskrcnn-matterport-tf2, fashion-seg-train, fashion-serving). Keep them in sync.
+
 ### Environment
 
-- **uv only** (never `pip install`): `uv add` / `uv add --dev` to change dependencies, which
-  updates `pyproject.toml` and `uv.lock` together. Commit both.
-- Don't edit by hand: `uv.lock`, `CHANGELOG.md`, the `version` in `pyproject.toml` (commitizen
-  owns the last two).
+- **uv only** (never `pip install`): `uv add` / `uv add --dev` change dependencies and update
+  `pyproject.toml` and `uv.lock` together; commit both.
+- Packages from the other repositories are referenced by their **release wheel URL** in
+  `[tool.uv.sources]`, like registry packages. Upgrade by changing the URL, then `uv lock`.
+- Don't edit by hand: `uv.lock`, `CHANGELOG.md`, the `version` in `pyproject.toml` (commitizen owns
+  the last two).
+- Never commit secrets (`.dvc/*.local`, tokens) or large files (`check-added-large-files`
+  blocks files over 1 MB: data and models go to DVC).
 
-### Code quality (enforced: `make lint` = pre-commit = CI)
+### Code quality: `make lint` = pre-commit hooks = CI
 
-`.pre-commit-config.yaml` is the single definition of the checks; CI runs the same hooks.
+`.pre-commit-config.yaml` is the single definition of the checks. The git hooks (`make hooks`),
+`make lint` and the CI lint job all run it, so a commit that passes locally passes in CI.
 
 - **ruff format** (line length 100) and **ruff check**: pycodestyle, pyflakes, isort, pyupgrade,
-  bugbear, comprehensions, simplify, and pydocstyle with the numpy convention.
-- **pydoclint**: every parameter, return value, yielded value, raised exception and class
-  attribute is documented, with types matching the annotations.
-- **pylint**: must stay at 10/10.
-- A `# noqa: <code>` or `# pylint: disable=<name>` needs a reason on the same line. Never
-  disable a check globally to make code pass.
+  bugbear, comprehensions, simplify, and pydocstyle (numpy convention).
+- **pydoclint**: every parameter, return value, yielded value, raised exception and class attribute
+  is documented, with types matching the annotations.
+- **pylint**: 10/10.
+- Hygiene hooks: trailing whitespace, end of files, YAML/TOML syntax, merge conflicts, large files.
+- A `# noqa: <code>` or `# pylint: disable=<name>` needs a reason on the same line. Never disable a
+  check globally or raise a limit to make code pass: fix the code.
 
 ### Docstrings: numpy style, everywhere
 
-Every module, class and function (public or private) has a
+Every module, class and function, public or private, has a
 [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) docstring:
 
 ```python
-def decode(rle: str, height: int, width: int) -> np.ndarray:
+def decode(rle: str, height: int, width: int = 1) -> np.ndarray:
     """Decode an RLE string into a boolean mask.
 
     Parameters
@@ -74,6 +83,8 @@ def decode(rle: str, height: int, width: int) -> np.ndarray:
         Space-separated ``start length`` pairs, 1-indexed, column-major.
     height : int
         Mask height in pixels.
+    width : int
+        Mask width in pixels. By default 1.
 
     Returns
     -------
@@ -83,52 +94,61 @@ def decode(rle: str, height: int, width: int) -> np.ndarray:
     Raises
     ------
     ValueError
-        If ...
+        If the RLE has an odd number of values.
 
     Examples
     --------
-    >>> decode("1 2", height=2, width=1).tolist()
+    >>> decode("1 2", height=2).tolist()
     [[True], [True]]
     """
 ```
 
-- Summary line in the imperative mood, ending with a period; blank line before sections.
-- Types in `Parameters` / `Returns` are written exactly like the annotations (`str | Path`,
-  `dict[str, Any]`): pydoclint compares them.
-- Classes document their constructor parameters and their `Attributes` in the class docstring.
-- `Examples` are doctests: pytest runs them, so they must stay correct.
-- Tests: a module docstring and a one-line docstring per test saying what behaviour it checks.
+- Summary line in the imperative mood, ending with a period, then a blank line before sections.
+- Types are written exactly like the annotations (`str | Path`, `dict[str, Any]`): pydoclint
+  compares them. No `, optional` suffix: state the default in the description ("By default 1.").
+- `Raises` lists the exceptions the function raises itself; mention exceptions propagated from
+  callees in the description.
+- Classes document their constructor parameters (`Parameters`) and attributes (`Attributes`) in the
+  class docstring, not in `__init__`. Instance attributes are declared in the class body
+  (`timeout: float`) so they can be checked.
+- `Examples` are doctests: pytest runs them (`--doctest-modules`), so they must stay correct.
+- Tests: a module docstring, and a one-line docstring per test saying which behaviour it checks.
 
 ### Code style
 
-- Type-annotate every function signature (including private helpers).
-- Import submodules explicitly (`from skimage import io`, not `import skimage.io` next to other
-  `skimage.*` imports) so linters can detect unused imports. No re-export blocks.
-- `pathlib.Path` over `os.path`; f-strings; no mutable default arguments; no `print` in library
-  code.
-- Keep functions small enough for pylint's limits instead of raising the limits.
+- Type-annotate every function signature, including private helpers.
+- Import submodules explicitly (`from skimage import io, transform`), not several `import
+  skimage.x` lines: linters can't tell which of those is unused. No re-export blocks: import from
+  the module that defines the name.
+- `pathlib.Path` over `os.path`, f-strings, no mutable default arguments, `logging` rather than
+  `print` in library code, error messages that say what to do.
+- Keep functions small enough for pylint's limits; split them rather than raising the limits.
+- No duplicated code across repositories: shared code goes in a released package
+  (fashion-seg-contract for the model's response, maskrcnn-matterport for Matterport code).
 
 ### Tests
 
-- pytest; tests are fast and offline. Every behaviour change or bug fix comes with a test.
-- The contract has negative tests: a change that should be breaking must make one fail.
+- pytest, fast and offline by default. Every behaviour change or bug fix comes with a test.
+- Tests that need data, models or services skip cleanly when they are missing (and run in CI when
+  the credentials are set).
+- `make check` (lint + tests) before every commit.
 
 ### Commits, PRs and releases
 
-- [Conventional Commits](https://www.conventionalcommits.org/), checked by the `commit-msg` hook
-  and on every PR: `type(scope): summary`, imperative, lower case, no period.
+- [Conventional Commits](https://www.conventionalcommits.org/), checked by the `commit-msg` hook and
+  on every PR: `type(scope): summary`, imperative, lower case, no final period. The body explains
+  *why*. One logical change per commit.
 - Types and their effect on the version (commitizen, `major_version_zero = true`):
 
   | Type | Release |
   |------|---------|
   | `feat` | minor |
   | `fix`, `perf`, `refactor` | patch |
-  | `!` / `BREAKING CHANGE:` footer | minor while < 1.0 (then major) |
+  | `!` after the type, or a `BREAKING CHANGE:` footer | minor while < 1.0 (then major) |
   | `docs`, `style`, `test`, `ci`, `build`, `chore` | none |
 
-- One logical change per commit; the body explains *why*.
-- Work on a branch, open a PR, merge only when CI is green, with a **merge commit** (not squash:
-  the individual conventional commits drive the changelog). Never push to `main` directly: only
-  the release workflow does (bump commit + tag).
+- Work on a branch, open a PR, merge only when CI is green, with a **merge commit** (not squash: the
+  individual conventional commits build the changelog). Never push to `main` directly: only the
+  release workflow does (bump commit + tag).
 - On merge, `release.yml` bumps the version, updates `CHANGELOG.md`, tags `vX.Y.Z` and publishes a
-  GitHub Release with the wheel and sdist.
+  GitHub Release (with the wheel and sdist for libraries).

@@ -4,6 +4,16 @@
 # Hooks use `uv run --no-sync`: during a partial commit pre-commit hides unstaged changes (e.g. a
 # uv.lock matching staged pyproject.toml edits); syncing would then try to rewrite the lockfile.
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
   - repo: local
     hooks:
       - id: ruff-format
