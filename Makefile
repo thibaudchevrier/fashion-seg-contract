@@ -1,20 +1,19 @@
-# Same commands locally and in CI (.github/workflows/ci.yml).
-PYLINT_TESTS_DISABLE = missing-module-docstring,missing-function-docstring,redefined-outer-name
+# `lint` runs the pre-commit hooks on every file: the same checks as the git hooks and CI.
 
-.PHONY: install format lint test check
+.PHONY: install hooks format lint test check
 
 install:
 	uv sync --locked --all-extras
 
+hooks:
+	uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+
 format:
-	uv run ruff format src tests
-	uv run ruff check --fix src tests
+	uv run ruff format .
+	uv run ruff check --fix .
 
 lint:
-	uv run ruff format --check src tests
-	uv run ruff check src tests
-	uv run pylint src
-	uv run pylint tests/*.py --disable=$(PYLINT_TESTS_DISABLE)
+	uv run pre-commit run --all-files --show-diff-on-failure
 
 test:
 	uv run pytest

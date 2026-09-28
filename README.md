@@ -60,10 +60,15 @@ mask = rle.decode(inst["mask_rle"], prediction["height"], prediction["width"])
 ## Development
 
 ```bash
-make install                                                              # all extras + dev tools
-uv run pre-commit install --hook-type pre-commit --hook-type commit-msg   # once
-make check                                                                # ruff, pylint, pytest
+make install   # all extras + dev tools
+make hooks     # once: pre-commit and commit-msg git hooks
+make check     # lint (all pre-commit hooks, exactly what CI runs) + tests (incl. doctests)
 ```
+
+Code quality is defined once, in `.pre-commit-config.yaml`: ruff (format, lint, numpy docstrings),
+pydoclint (every parameter, return and exception documented) and pylint (10/10). The git hooks,
+`make lint` and CI all run it. Conventions for contributors (and for Claude Code) are in
+[`CLAUDE.md`](CLAUDE.md).
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), checked by the
 `commit-msg` hook and on every PR. On every merge to `main`, commitizen bumps the version for

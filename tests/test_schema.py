@@ -1,3 +1,5 @@
+"""Tests for the response schema."""
+
 import jsonschema
 import pytest
 
@@ -13,6 +15,7 @@ VALID = {
 
 
 def test_valid_prediction_passes():
+    """A well-formed prediction, with or without instances, is valid."""
     schema.validate(VALID)
     schema.validate({"height": 1, "width": 1, "instances": []})
 
@@ -27,9 +30,11 @@ def test_valid_prediction_passes():
     ],
 )
 def test_breaking_changes_are_rejected(broken):
+    """Renamed fields, background ids, bad boxes and odd RLEs are rejected."""
     with pytest.raises(jsonschema.ValidationError):
         schema.validate(broken)
 
 
 def test_optional_fields_are_backward_compatible():
+    """Unknown extra fields are allowed."""
     schema.validate({**VALID, "model_version": "5"})
