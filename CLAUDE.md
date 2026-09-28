@@ -4,12 +4,13 @@ Guidance for working in this repository. Read it before changing anything.
 
 ## What this repo is
 
-`fashion-seg-contract`: the **response contract** of the fashion segmentation model, shared by the
-producer ([fashion-seg-train](https://github.com/thibaudchevrier/fashion-seg-train)) and its
-consumers ([fashion-serving](https://github.com/thibaudchevrier/fashion-serving)).
+`fashion-seg-contract`: the **contract** (request and response) of the fashion segmentation
+model, shared by the producer ([fashion-seg-train](https://github.com/thibaudchevrier/fashion-seg-train))
+and its consumers ([fashion-serving](https://github.com/thibaudchevrier/fashion-serving)).
 
 | Module | Content |
 |--------|---------|
+| `src/fashion_seg_contract/request.py` | `build()`: the request body; `IMAGE_FIELD`, `MIN_SCORE_PARAM`, `DEFAULT_MIN_SCORE` |
 | `src/fashion_seg_contract/schema.py` | JSON Schema of one prediction (`prediction.schema.json`, package data), `validate()`, `Prediction` / `Instance` typed dicts |
 | `src/fashion_seg_contract/rle.py` | `encode` / `decode` of `mask_rle` |
 | `src/fashion_seg_contract/labels.py` | `load_class_names()`: model class id → name |
@@ -124,7 +125,8 @@ def decode(rle: str, height: int, width: int = 1) -> np.ndarray:
   `print` in library code, error messages that say what to do.
 - Keep functions small enough for pylint's limits; split them rather than raising the limits.
 - No duplicated code across repositories: shared code goes in a released package
-  (fashion-seg-contract for the model's response, maskrcnn-matterport for Matterport code).
+  (fashion-seg-contract for the model's request and response, maskrcnn-matterport for Matterport
+  code).
 
 ### Tests
 
