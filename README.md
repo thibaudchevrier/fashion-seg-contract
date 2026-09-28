@@ -1,11 +1,12 @@
 # fashion-seg-contract
 
-The **response contract** of the fashion segmentation model: what the model returns for an image,
-and the helpers to read it. It is the only code shared by the producer and the consumers:
+The **contract** of the fashion segmentation model: the request it accepts, what it returns for an
+image, and the helpers to build and read them. It is the only code shared by the producer and the
+consumers:
 
 ```
-fashion-seg-train  ──(packages the model, its responses follow)──►  fashion-seg-contract
-fashion-serving    ──(reads the responses with)────────────────────►  fashion-seg-contract
+fashion-seg-train  ──(packages the model, it serves this contract)──►  fashion-seg-contract
+fashion-serving    ──(builds requests and reads responses with)─────►  fashion-seg-contract
 ```
 
 Depends on numpy only (1.x or 2.x), so it installs next to TensorFlow 2.15, TensorFlow 2.21 or
@@ -13,13 +14,20 @@ PyTorch alike.
 
 | Module | Content |
 |--------|---------|
+| `fashion_seg_contract.request` | `build(images, min_score)`: the request body; `IMAGE_FIELD`, `DEFAULT_MIN_SCORE` |
 | `fashion_seg_contract.schema` | The JSON Schema of one prediction (`schema()`), `validate()`, and `Prediction` / `Instance` typed dicts |
 | `fashion_seg_contract.rle` | `encode(mask)` / `decode(rle, height, width)` for `mask_rle` (the iMaterialist annotation encoding) |
 | `fashion_seg_contract.labels` | `load_class_names(label_descriptions.json)`: model class id → name (0 = background) |
 
 ## The contract
 
-One prediction per image:
+Request, one row per image (MLflow's `dataframe_records`; `min_score` defaults to 0.7):
+
+```json
+{"dataframe_records": [{"image": "<base64 jpeg/png>"}], "params": {"min_score": 0.8}}
+```
+
+Response, one prediction per image:
 
 ```json
 {"height": 400, "width": 300, "instances": [
